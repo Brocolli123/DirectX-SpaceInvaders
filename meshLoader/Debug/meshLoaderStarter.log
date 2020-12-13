@@ -1,0 +1,4 @@
+﻿  Game.cpp
+C:\Users\birke\source\repos\t13_meshloaderstarter\meshLoaderStarter\Game.cpp(142,61): warning C4244:  'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\birke\source\repos\t13_meshloaderstarter\meshLoaderStarter\Game.cpp(142,50): warning C4244:  'argument': conversion from 'int' to 'float', possible loss of data
+  meshLoaderStarter.vcxproj -> C:\Users\birke\source\repos\t13_meshloaderstarter\meshLoaderStarter\../bin/meshLoaderStarter.exe
