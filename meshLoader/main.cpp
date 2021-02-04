@@ -24,7 +24,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     Game::Get().ProcessKey((char)wParam);
     break;
 	case WM_INPUT:
-    //Game::Get().mMKIn.MessageEvent((HRAWINPUT)lParam);  //TODO: possibly implement
 		Game::Get().WindowsMssgHandler(hwnd, msg, wParam, lParam);
     break;
 	}

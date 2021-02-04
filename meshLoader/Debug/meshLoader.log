@@ -1,3 +1,8 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(452,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (meshLoaderStarter.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   Game.cpp
+  GameObj.cpp
+  PlayMode.cpp
+  Satellite.cpp
+  main.cpp
+  Generating Code...
   meshLoader.vcxproj -> C:\Users\birke\source\repos\t13_meshloaderstarter - Copy\meshLoader\../bin/meshLoader.exe

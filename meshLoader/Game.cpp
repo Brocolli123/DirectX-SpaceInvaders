@@ -1,22 +1,16 @@
 #include "Game.h"
 #include "CommonStates.h"
 
-void Setup(Model& m, Mesh& source, const Vector3& scale, const Vector3& pos, const Vector3& rot)
-{
-	m.Initialise(source);
-	m.GetScale() = scale;
-	m.GetPosition() = pos;
-	m.GetRotation() = rot;
-}
-
-void Setup(Model& m, Mesh& source, float scale, const Vector3& pos, const Vector3& rot)
-{
-	Setup(m, source, Vector3(scale, scale, scale), pos, rot);
-}
 
 #pragma region Game
+//MouseAndKeys Game::sMKIn;
+//Gamepads Game::sGamepads;
+
 void Game::Initialise()
 {
+  sMKIn.Initialise(WinUtil::Get().GetMainWnd(), true, false);
+  sGamepads.Initialise();
+
   //Setup Font
 	mpFontBatch = new SpriteBatch(&mD3D.GetDeviceCtx());
 	assert(mpFontBatch);
@@ -27,6 +21,7 @@ void Game::Initialise()
   mMMgr.AddMode(new IntroMode());
   mMMgr.AddMode(new GameOverMode());
   mMMgr.SwitchMode(IntroMode::MODE_NAME);
+
 }
 
 void Game::Release()
@@ -36,11 +31,18 @@ void Game::Release()
 	delete mpFont;
 	mpFont = nullptr;
   mMMgr.Release();
+
+  for (auto c : colBoxes)
+  {
+    delete c; //Clear all the pointers to collision boxes - prevent memory leak
+  }
+  colBoxes.clear(); //Empty array once pointers have been removed
 }
 
 void Game::Update(float dTime)
 {
   mMMgr.Update(dTime);
+  CheckCollisions();
 }
 
 void Game::Render(float dTime)
@@ -54,10 +56,12 @@ void Game::Render(float dTime)
 
   mpFontBatch->End();
   mD3D.EndRender();
+  sMKIn.PostProcess();    
 }
 
 LRESULT Game::WindowsMssgHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+  sMKIn.MessageEvent((HRAWINPUT)lParam);
 	//do something game specific here
   switch (msg)
   {
@@ -75,7 +79,49 @@ LRESULT Game::WindowsMssgHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 	//default message handling (resize window, full screen, etc)
 	return WinUtil::Get().DefaultMssgHandler(hwnd, msg, wParam, lParam);
 }
+
+////////////// Collision Functions  /////////////////////////
+void Game::AddColBox(CollisionBox* col) {    
+  colBoxes.push_back(col);  //Add pointer to the collision box
+}
+
+void Game::CheckCollisions() {
+  //vector<CollisionBox*>::iterator it;
+  //for (it = colBoxes.begin(); it != colBoxes.end(); ++it) {
+  ////  //for each box - compare the 4 corner points with every other box , only compare different collision layers
+  //  Vector3 boxPos = (*it)->mModel.GetPosition();
+  //  for (vector<CollisionBox*>::iterator it_2 = colBoxes.begin(); it_2 != colBoxes.end(); ++it_2) {
+  //    if ((*it) != (*it_2) && (*it)->colLayer != (*it_2)->colLayer && (*it)->isActive && (*it_2)->isActive && (!(*it)->hasCollided) && (!(*it_2)->hasCollided)) {   
+  //      //Don't check for collision on same object or same layer boxes or inactive or already checked boxes
+  //      if (IsPointInside(*(*it), *(*it_2))) {  //Compare it and it_2 for collision
+  //        (*it)->hasCollided = true;    //Register collision on both boxes
+  //        (*it_2)->hasCollided = true;
+  //        (*it)->collidedLayer = (*it_2)->colLayer; //Set the layer it has collided with on both boxes
+  //        (*it_2)->collidedLayer = (*it)->colLayer;
+  //      }  
+  //    }     
+  //  }   
+  //  (*it)->isChecked = true;  //it has been checked with every other box
+  //}
+
+}
+
+bool Game::IsPointInside(CollisionBox& a, CollisionBox& b) {
+  Vector3 a_tl, a_br, b_tl, b_br;                                                             
+  a_tl = { a.mModel.GetPosition().x -= (a.lwh), a.mModel.GetPosition().y + (a.lwh) }; //Work out top left/bottom right vectors
+  a_br = { a.mModel.GetPosition().x += (a.lwh), a.mModel.GetPosition().y - (a.lwh) }; //TODO: better method of working out
+  b_tl = { b.mModel.GetPosition().x -= (b.lwh), b.mModel.GetPosition().y + (b.lwh) }; //TODO: is /2 right?
+  b_br = { b.mModel.GetPosition().x += (b.lwh), b.mModel.GetPosition().y - (b.lwh) };
+    return (
+      (a_tl.x <= b_br.x && a_br.x >= b_tl.x) &&
+      (a_tl.y <= b_br.y && a_br.y >= b_tl.y) &&
+      (a_tl.z <= b_br.z && a_br.z >= b_tl.z)
+      );
+  //TODO: Use performance methods like space hash partitioning, Quadtrees/Octrees etc.
+}
 #pragma endregion Game
+
+
 /////////////////////////////////////////////////////
 #pragma region Intro
 const std::string IntroMode::MODE_NAME = "INTRO";
@@ -83,7 +129,6 @@ const std::string IntroMode::MODE_NAME = "INTRO";
 IntroMode::IntroMode()
   : mSpr(WinUtil::Get().GetD3D())
 {
-  //TODO: set path to data????
 
   mSpr.SetTex(*WinUtil::Get().GetD3D().GetCache().LoadTexture(&WinUtil::Get().GetD3D().GetDevice(), "bgmenu.dds", "bgmenu"));
   mSpr.SetScale(Vector2(WinUtil::Get().GetClientWidth() / mSpr.GetTexData().dim.x, WinUtil::Get().GetClientHeight() / mSpr.GetTexData().dim.y));
@@ -93,6 +138,7 @@ IntroMode::IntroMode()
 
 void IntroMode::Update(float dTime)
 {
+
 }
 
 void IntroMode::Render(float dTime, DirectX::SpriteBatch& batch)
@@ -100,7 +146,7 @@ void IntroMode::Render(float dTime, DirectX::SpriteBatch& batch)
   mSpr.Draw(batch);
 }
 
-void IntroMode::ProcessKey(char key)      //TODO: pass from message pump through to here?????
+void IntroMode::ProcessKey(char key)    
 {
   switch (key)
   {
@@ -125,6 +171,8 @@ void IntroMode::ProcessKey(char key)      //TODO: pass from message pump through
 //  //Game::Get().GetMenuMgr().ShowMenu("Intro");
 //}
 #pragma endregion Intro
+
+
 //////////////////////////////////////////////////////////////////////////////////
 #pragma region End
 const std::string GameOverMode::MODE_NAME = "GAMEOVER";
@@ -133,8 +181,8 @@ GameOverMode::GameOverMode()
   : mSpr(WinUtil::Get().GetD3D())
 {
   mSpr.SetTex(*WinUtil::Get().GetD3D().GetCache().LoadTexture(&WinUtil::Get().GetD3D().GetDevice(), "bgend.dds", "bgend"));
-  float xscale = (WinUtil::Get().GetClientWidth() * 0.8f) / mSpr.GetTexData().dim.x;
-  mSpr.SetScale(Vector2(xscale, xscale));     //TODO: fix scaling of this image
+  //float xscale = (WinUtil::Get().GetClientWidth() * 0.8f) / mSpr.GetTexData().dim.x;
+  //mSpr.SetScale(Vector2(xscale, xscale));     //TODO: fix scaling of this image
 
   //UI stuff
 }
@@ -154,7 +202,7 @@ void GameOverMode::ProcessKey(char key)
   switch (key)
   {
   case 32:  //Space
-    Game::Get().GetModeMgr().SwitchMode(IntroMode::MODE_NAME);
+    //Game::Get().GetModeMgr().SwitchMode(IntroMode::MODE_NAME);
     break;
   case 27:  //Escape
     PostQuitMessage(0);
@@ -173,174 +221,3 @@ void GameOverMode::ProcessKey(char key)
 //  //Game::Get().GetMenuMgr().ShowMenu("GameOver");
 //}
 #pragma endregion Over
-//////////////////////////////////////////////////////////////////////////////TODO: split playmode into own file without circular linking
-#pragma region Play
-const string PlayMode::MODE_NAME = "PLAY";
-
-//void Setup(Model& m, Mesh& source, const Vector3& scale, const Vector3& pos, const Vector3& rot)
-//{
-//  m.Initialise(source);
-//  m.GetScale() = scale;
-//  m.GetPosition() = pos;
-//  m.GetRotation() = rot;
-//}
-//
-//void Setup(Model& m, Mesh& source, float scale, const Vector3& pos, const Vector3& rot)
-//{
-//  Setup(m, source, Vector3(scale, scale, scale), pos, rot);
-//}
-
-PlayMode::PlayMode() {
-  //TODO: implement?
-  //mModels.reserve(1000);  //Reserve 1000 spaces in memory for models
-}
-
-void PlayMode::Load()
-{
-  MyD3D& d3d = WinUtil::Get().GetD3D();
-
-  //load models
-
-  d3d.GetFX().SetupDirectionalLight(0, true, Vector3(-0.7f, -0.7f, 0.7f), Vector3(0.47f, 0.47f, 0.47f), Vector3(0.15f, 0.15f, 0.15f), Vector3(0.25f, 0.25f, 0.25f));
-}
-
-void PlayMode::Enter()
-{
-  MyD3D& d3d = WinUtil::Get().GetD3D();
-  //Setup Input
-  mMKIn.Initialise(WinUtil::Get().GetMainWnd(), true, false);
-  mGamepads.Initialise();
-  //Setup Font
-  mpFontBatch = new SpriteBatch(&d3d.GetDeviceCtx());
-  assert(mpFontBatch);
-  mpFont = new SpriteFont(&d3d.GetDevice(), L"../bin/data/fonts/algerian.spritefont");
-  assert(mpFont);
-  //Setup Models
-  mLoadData.totalToLoad = 0;
-  mLoadData.loadedSoFar = 0;
-  mLoadData.running = true;
-  mLoadData.loader = std::async(launch::async, &PlayMode::Load, this);  //calls load function in another thread
-
-}
-
-void PlayMode::Update(float dTime) {
-  mAngle += dTime * 0.25f;
-}
-
-void PlayMode::Render(float dTime, SpriteBatch& batch)
-{
-  if (mLoadData.running) {
-    if (!mLoadData.loader._Is_ready()) {    //If it hasn't completed the load function then display loading %
-      RenderLoad(dTime);
-      return;
-    }
-    mLoadData.loader.get(); //blocks main thread until loader completes (is ready anyway by now). Ensure thread is stopped and released
-    mLoadData.running = false;  //stop the loader doing it's thing
-    return;
-  }
-
-  //Ready so normal render now
-  RenderGame(dTime);
-}
-
-void PlayMode::RenderLoad(float dTime)
-{
-  MyD3D& d3d = WinUtil::Get().GetD3D();
-  d3d.BeginRender(Colours::Black);
-
-  mpFontBatch->Begin();
-
-  static int pips = 0;
-  static float elapsed = 0;
-  elapsed += dTime;
-  if (elapsed > 0.25f) {      //code for incrementing the elipsses
-    pips++;
-    elapsed = 0;
-  }
-  if (pips > 10)
-    pips = 0;
-  wstringstream ss;
-  ss << L"Loading meshes(" << (int)(((float)mLoadData.loadedSoFar / (float)mLoadData.totalToLoad) * 100.f) << L"%) ";   //Display % done
-  for (int i = 0; i < pips; ++i)
-    ss << L'.';
-  mpFont->DrawString(mpFontBatch, ss.str().c_str(), Vector2(100, 200), Colours::White, 0, Vector2(0, 0), Vector2(1.f, 1.f));
-
-
-  ss.str(L"");                              //Display framerate
-  ss << L"FPS:" << (int)(1.f / dTime);
-  mpFont->DrawString(mpFontBatch, ss.str().c_str(), Vector2(10, 550), Colours::White, 0, Vector2(0, 0), Vector2(0.5f, 0.5f));
-
-
-  mpFontBatch->End();
-
-
-  d3d.EndRender();
-
-}
-
-void PlayMode::RenderGame(float dTime)
-{
-  MyD3D& d3d = WinUtil::Get().GetD3D();
-  d3d.BeginRender(Colours::Black);
-
-  mpFontBatch->Begin();
-
-
-  d3d.GetFX().SetPerFrameConsts(d3d.GetDeviceCtx(), mCamPos);
-  CreateViewMatrix(d3d.GetFX().GetViewMatrix(), mCamPos, Vector3(0, 0, 0), Vector3(0, 1, 0));
-  CreateProjectionMatrix(d3d.GetFX().GetProjectionMatrix(), 0.25f * PI, WinUtil::Get().GetAspectRatio(), 1, 1000.f);
-
-  Matrix w = Matrix::CreateRotationY(sinf(mAngle));
-  d3d.GetFX().SetPerObjConsts(d3d.GetDeviceCtx(), w);
-
-  //render all models
-  for (auto& mod : mModels)
-    d3d.GetFX().Render(mod);
-
-  wstringstream ss;
-  ss.str(L"");                              //Display framerate
-  ss << L"FPS:" << (int)(1.f / dTime);
-  mpFont->DrawString(mpFontBatch, ss.str().c_str(), Vector2(10, 550), Colours::White, 0, Vector2(0, 0), Vector2(0.5f, 0.5f));
-
-  mpFontBatch->End();
-  d3d.EndRender();
-}
-
-//bool PlayMode::Exit() {
-//  return false; //TODO: implement
-//}
-
-void PlayMode::ProcessKey(char key) {
-  const float camInc = 200.f * GetElapsedSec(); //To Move Camera
-
-  switch (key) {
-  case 'Q':
-    PostQuitMessage(0);
-    break;
-  case 'p':
-    Game::Get().GetModeMgr().SwitchMode(GameOverMode::MODE_NAME);
-    break;
-  case 'a':
-    mCamPos.y += camInc;
-    break;
-  case 'z':
-    mCamPos.y -= camInc;
-    break;
-  case 'd':
-    mCamPos.x -= camInc;
-    break;
-  case 'f':
-    mCamPos.x += camInc;
-    break;
-  case 'w':
-    mCamPos.z += camInc;
-    break;
-  case 's':
-    mCamPos.z -= camInc;
-    break;
-  case ' ':
-    mCamPos = mDefCamPos;
-    break;
-  }
-}
-#pragma endregion Play

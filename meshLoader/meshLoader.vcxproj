@@ -96,23 +96,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="D3D.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="FX.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameObj.cpp" />
     <ClCompile Include="GeometryBuilder.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModeMgr.cpp" />
+    <ClCompile Include="PlayMode.cpp" />
     <ClCompile Include="RandomNumberGenerator.cpp" />
+    <ClCompile Include="Satellite.cpp" />
     <ClCompile Include="ShaderTypes.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TexCache.cpp" />
     <ClCompile Include="WindowUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="D3D.h" />
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="FX.h" />
@@ -122,11 +127,14 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModeMgr.h" />
+    <ClInclude Include="PlayMode.h" />
     <ClInclude Include="RandomNumberGenerator.h" />
+    <ClInclude Include="Satellite.h" />
     <ClInclude Include="ShaderTypes.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TexCache.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="WindowUtils.h" />
   </ItemGroup>
   <ItemGroup>
